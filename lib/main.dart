@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ott_app/lottie.dart';
+import 'package:ott_app/loginservices/lottie.dart';
 
 void main() {
  runApp(const ProviderScope(child: MyApp()));}

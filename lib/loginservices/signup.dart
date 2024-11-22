@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:ott_app/login.dart';
+
+import 'package:ott_app/loginservices/login.dart';
 
 final passwordVisibilityProvider = StateProvider<bool>((ref) => false);
 final confirmPasswordVisibilityProvider = StateProvider<bool>((ref) => false);
