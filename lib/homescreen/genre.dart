@@ -30,14 +30,18 @@ class ImageSelectionScreenState extends State<ImageSelectionScreen> {
     jwtToken = await storage.read(key: 'jwt_token');
 
     if (jwtToken == null) {
-      // Token not found, handle this case (maybe redirect to login)
       return;
+
+      
     }
+
+
+
 
     final response = await http.get(
       Uri.parse('https://watch-movie-tzae.onrender.com/genre'),
       headers: {
-        'Authorization': 'Bearer $jwtToken', // Use JWT token in header
+        'Authorization': 'Bearer $jwtToken',
       },
     );
 
@@ -46,14 +50,12 @@ class ImageSelectionScreenState extends State<ImageSelectionScreen> {
       final message = responseData['message'];
 
       if (message == 'more than one login') {
-        // User has already selected a genre, redirect to HomePage
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomePage()),
         );
       }
     } else {
-      // Handle error, for example, no genre data found or request failed
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Error checking genre status")),
       );
@@ -75,11 +77,11 @@ class ImageSelectionScreenState extends State<ImageSelectionScreen> {
       Uri.parse('https://watch-movie-tzae.onrender.com/choice'),
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer $jwtToken', // JWT token in header
+        'Authorization': 'Bearer $jwtToken',
       },
       body: jsonEncode({
         'genre': genres,
-        'email': 'legendshashwat.gkp@gmail.com', // Use the user's email
+        'email': 'legendshashwat.gkp@gmail.com',
       }),
     );
 
@@ -88,19 +90,16 @@ class ImageSelectionScreenState extends State<ImageSelectionScreen> {
       final message = responseData['message'];
 
       if (message == 'genre updated successfully') {
-        // Genre successfully updated
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomePage()), // Redirect to home page after genre update
+          MaterialPageRoute(builder: (context) => const HomePage()), 
         );
       } else {
-        // If genre update fails or any other condition
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(message)),
         );
       }
     } else {
-      // Handle error
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Error updating genre")),
       );
