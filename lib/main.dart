@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ott_app/loginservices/login.dart';
+import 'package:ott_app/screens/homescreen/categoreis.dart';
 
 void main() {
  runApp(const ProviderScope(child: MyApp()));}
@@ -16,7 +17,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue, 
       ),
-      home: const LoginPage(), 
+      home: const Categoreis(), 
     );
   }
 }
