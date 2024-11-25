@@ -47,17 +47,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (value == null || value.isEmpty) {
       return 'Please enter your password';
     }
-    if (value.length < 6) {
-      return 'Password must be at least 6 characters';
-    }
     return null;
   }
-
-  Future<void> _login(BuildContext context) async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
+  
+Future<void> _login(BuildContext context) async {
+  if (_formKey.currentState!.validate()) {
     ref.read(isLoadingProvider.notifier).state = true;
 
     try {
@@ -66,65 +60,57 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': _emailController.text.trim(),
-          'password': _passwordController.text.trim(),
+          'password': _passwordController.text,
         }),
       );
 
+      ref.read(isLoadingProvider.notifier).state = false;
+
+      final responseBody = jsonDecode(response.body);
+
       if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        final token = responseData['token'];
+        if (responseBody is String && responseBody.contains('Incorrect Password')) {
+          _showErrorDialog(context, 'Incorrect Password');
+        } else if (responseBody is String && responseBody.contains('There is no user')) {
+          _showErrorDialog(context, 'No user found with this email');
+        } else if (responseBody is String) {
+          // Assuming the response is a JWT token
+          await secureStorage.write(key: 'token', value: responseBody);
+          ref.read(tokenProvider.notifier).state = responseBody;
 
-        if (token != null) {
-          await secureStorage.write(key: 'jwt_token', value: token);
-          ref.read(tokenProvider.notifier).state = token;
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Login Successful!')),
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePage()),
           );
-
-          await _checkUserGenre(token, context);
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login Failed: ${response.body}')),
-        );
+        _showErrorDialog(context, 'Login failed. Please try again.');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('An error occurred: $e')),
-      );
-    } finally {
       ref.read(isLoadingProvider.notifier).state = false;
+      _showErrorDialog(context, 'Network error. Please check your connection.');
     }
   }
+}
 
-  Future<void> _checkUserGenre(String token, BuildContext context) async {
-    final response = await http.get(
-      Uri.parse('https://watch-movie-tzae.onrender.com/genre'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
-      final message = responseData['message'];
-
-      if (message == 'first login') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ImageSelectionScreen()),
-        );
-      } else if (message == 'more than one login') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error fetching genre data")),
-      );
-    }
-  }
+void _showErrorDialog(BuildContext context, String message) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Login Error'),
+      content: Text(message),
+      actions: <Widget>[
+        TextButton(
+          child: const Text('Okay'),
+          onPressed: () {
+            Navigator.of(ctx).pop();
+          },
+        )
+      ],
+    ),
+  );
+}
+ 
 
   @override
   Widget build(BuildContext context) {

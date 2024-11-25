@@ -29,7 +29,9 @@ class ImageSelectionScreenState extends State<ImageSelectionScreen> {
     final storage = FlutterSecureStorage();
     jwtToken = await storage.read(key: 'jwt_token');
 
-    if (jwtToken == null) {
+    if (jwtToken == null) 
+    
+    {
       return;
 
       

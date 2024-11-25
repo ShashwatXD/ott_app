@@ -3,73 +3,53 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-class ForgetPasswordPage extends ConsumerStatefulWidget {
-  const ForgetPasswordPage({Key? key}) : super(key: key);
+final resetPasswordProvider = StateNotifierProvider<ResetPasswordNotifier, AsyncValue<String>>((ref) {
+  return ResetPasswordNotifier();
+});
 
-  @override
-  ConsumerState<ForgetPasswordPage> createState() => _ForgetPasswordPageState();
-}
+class ResetPasswordNotifier extends StateNotifier<AsyncValue<String>> {
+  ResetPasswordNotifier() : super(const AsyncValue.data(''));
 
-class _ForgetPasswordPageState extends ConsumerState<ForgetPasswordPage> {
-  late TextEditingController emailController;
-
-  @override
-  void initState() {
-    super.initState();
-    emailController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    emailController.dispose();
-    super.dispose();
-  }
-
-  Future<void> sendResetEmail() async {
-    final email = emailController.text;
-
-    if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email is required')),
-      );
-      return;
-    }
-
+  Future<void> sendResetEmail(String email) async {
     const String apiUrl = "https://watch-movie-tzae.onrender.com/password/reset";
 
     try {
+      state = const AsyncValue.loading();
+
       final response = await http.post(
         Uri.parse(apiUrl),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"email": email}),
       );
 
-      final data = jsonDecode(response.body);
-
+      final dynamic responseBody = response.body;
+      
       if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reset email sent successfully!')),
-        );
-        Navigator.pop(context);
+        state = AsyncValue.data(responseBody.toString());
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data['message'] ?? 'Failed to send reset email')),
-        );
+        state = AsyncValue.error(responseBody.toString(), StackTrace.current);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      state = AsyncValue.error("Error: $e", StackTrace.current);
     }
   }
+}
+
+class ForgetPasswordPage extends ConsumerWidget {
+  const ForgetPasswordPage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final resetPasswordState = ref.watch(resetPasswordProvider);
+    final resetPasswordNotifier = ref.read(resetPasswordProvider.notifier);
+
+    final emailController = TextEditingController();
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('images/background.jpeg'),
+            image: const AssetImage('images/background.jpeg'),
             fit: BoxFit.cover,
             opacity: 0.4,
           ),
@@ -126,7 +106,9 @@ class _ForgetPasswordPageState extends ConsumerState<ForgetPasswordPage> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  onPressed: sendResetEmail,
+                  onPressed: () {
+                    resetPasswordNotifier.sendResetEmail(emailController.text);
+                  },
                   child: const Text(
                     "Send Reset Email",
                     style: TextStyle(
@@ -148,6 +130,20 @@ class _ForgetPasswordPageState extends ConsumerState<ForgetPasswordPage> {
                       fontSize: 14,
                       decoration: TextDecoration.underline,
                     ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                resetPasswordState.when(
+                  data: (message) => message.isNotEmpty
+                      ? Text(
+                          message,
+                          style: const TextStyle(color: Colors.green),
+                        )
+                      : const SizedBox.shrink(),
+                  loading: () => const CircularProgressIndicator(),
+                  error: (error, _) => Text(
+                    error.toString(),
+                    style: const TextStyle(color: Colors.red),
                   ),
                 ),
               ],
