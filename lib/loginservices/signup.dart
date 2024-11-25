@@ -146,7 +146,7 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
                 children: [
                   Image.asset(
                     'images/phoenix.png',
-                    height: 150,
+                    height: 190,
                   ),
                   const SizedBox(height: 30),
                   const Text(

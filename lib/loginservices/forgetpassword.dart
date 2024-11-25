@@ -63,7 +63,7 @@ class ForgetPasswordPage extends ConsumerWidget {
               children: [
                 Image.asset(
                   'images/phoenix.png',
-                  height: 100,
+                  height: 190,width:10000,
                 ),
                 const SizedBox(height: 30),
                 const Text(

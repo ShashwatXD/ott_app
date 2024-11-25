@@ -6,7 +6,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:ott_app/homescreen/firstpage.dart';
 import 'package:ott_app/homescreen/genre.dart';
 import 'package:ott_app/loginservices/forgetpassword.dart';
-import 'package:ott_app/homescreen/homepage.dart';
 import 'package:ott_app/loginservices/signup.dart';
 
 final secureStorage = FlutterSecureStorage();
@@ -161,7 +160,7 @@ void _showErrorDialog(BuildContext context, String message) {
                     const SizedBox(height: 80),
                     Image.asset(
                       'images/phoenix.png',
-                      height: 100,
+                      height: 200,
                     ),
                     const SizedBox(height: 30),
                     const Text(

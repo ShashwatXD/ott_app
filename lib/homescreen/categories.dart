@@ -7,12 +7,8 @@ class Categoreis extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
+        
+        
         title: const Text(
           "Categories",
           style: TextStyle(
@@ -25,7 +21,6 @@ class Categoreis extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.search, color: Colors.white),
             onPressed: () {
-              // User can type and search the item they want
             },
           ),
         ],
