@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ott_app/screens/videoplayerscreen.dart';
 
 class Categoreis extends StatelessWidget {
   const Categoreis({super.key});
@@ -32,15 +33,15 @@ class Categoreis extends StatelessWidget {
         backgroundColor: const Color(0xFF04130C),
       ),
       backgroundColor: const Color(0xFF03130B),
-      body: const SingleChildScrollView(child:  Column(
+      body: SingleChildScrollView(child:  Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Divider(
+          const Divider(
             thickness: 1,
             color: Color(0xFF068441),
             height: 1,
           ),
-          Padding(
+          const Padding(
             padding: EdgeInsets.all(16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -61,51 +62,64 @@ class Categoreis extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal, 
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: EdgeInsets.only(right: 8.0), 
-                    child : Column(crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                     ClipRRect(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(10),
-                        topRight: Radius.circular(10),
-                      ),
-                      child: Image(
-                        image: NetworkImage(
-                          "https://s3-alpha-sig.figma.com/img/f65c/59db/abfa774fe2d358ecf27d3ec41eba2c37?Expires=1733097600&Key-Pair-Id=APKAQ4GOSFWCVNEHN3O4&Signature=q6P0dwWteNwF-hbC64tE2RAL14pp5Dc~2qCHpEAehWymQDQ92T16WhRnWmqppZIjSjEDPWF8FCsaSiCkHWvf3lOXOiEMz9V0XbSy3SUlaQaJ9kwvJYQtAAFPBjnlVKl17qc6ubBgrFsPnbQAjUMAmb5wu41PTih1~1uv1tz4gX-QocvCXTWWXV1dv2QAHpwCjlxV1LSGhyOK5kn9tFcfwsemSVatLpEBRG-btl2v9ARAHcL0iO9MeSDRuHYcfYW31WyKo601XUTeIupho~LrHr7r0OZcc~d9eCkQbhzAp6pCE2U2-ZU2zutShxFMpZxRzz-HHZJNisaZgWMvq-vBSw__",
+                  GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const VideoPlayerScreen(
+                              videoUrl: 'https://ottplatformapp.s3.ap-south-1.amazonaws.com/VID_20231214_124322.mp4', // Replace with actual URL
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.only(right: 8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(10),
+                                topRight: Radius.circular(10),
+                              ),
+                              child: Image(
+                                image: NetworkImage(
+                                  "https://s3-alpha-sig.figma.com/img/f65c/59db/abfa774fe2d358ecf27d3ec41eba2c37?Expires=1733097600&Key-Pair-Id=APKAQ4GOSFWCVNEHN3O4&Signature=q6P0dwWteNwF-hbC64tE2RAL14pp5Dc~2qCHpEAehWymQDQ92T16WhRnWmqppZIjSjEDPWF8FCsaSiCkHWvf3lOXOiEMz9V0XbSy3SUlaQaJ9kwvJYQtAAFPBjnlVKl17qc6ubBgrFsPnbQAjUMAmb5wu41PTih1~1uv1tz4gX-QocvCXTWWXV1dv2QAHpwCjlxV1LSGhyOK5kn9tFcfwsemSVatLpEBRG-btl2v9ARAHcL0iO9MeSDRuHYcfYW31WyKo601XUTeIupho~LrHr7r0OZcc~d9eCkQbhzAp6pCE2U2-ZU2zutShxFMpZxRzz-HHZJNisaZgWMvq-vBSw__",
+                                ),
+                                width: 160,
+                                height: 100,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            SizedBox(height: 8.0),
+                            Text(
+                              "Aashiqui 2",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              "(2013)",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
                         ),
-                        width: 160,
-                        height: 100,
-                        fit: BoxFit.cover,
                       ),
                     ),
-                     const SizedBox(height: 8.0),
-                          Text(
-                            "Aashiqui 2",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            "(2013)",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ],
-                    ),
-                  ),
-                  Padding(
+                  const Padding(
                     padding: EdgeInsets.only(right: 8.0), 
                     child : Column(crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -143,7 +157,7 @@ class Categoreis extends StatelessWidget {
                         ],
                     ),
                   ),
-                  Column(
+                  const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                   ClipRRect(
@@ -184,7 +198,7 @@ class Categoreis extends StatelessWidget {
           ),
           ),
       
-          Padding(
+          const Padding(
             padding: EdgeInsets.all(16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -204,7 +218,7 @@ class Categoreis extends StatelessWidget {
               ],
             ),
           ),
-          Padding(
+          const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal, 
@@ -327,7 +341,7 @@ class Categoreis extends StatelessWidget {
             ),
           ),
           ),
-          Padding(
+          const Padding(
             padding: EdgeInsets.all(16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -347,7 +361,7 @@ class Categoreis extends StatelessWidget {
               ],
             ),
           ),
-          Padding(
+          const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal, 
@@ -470,7 +484,7 @@ class Categoreis extends StatelessWidget {
             ),
           ),
           ),
-          Padding(
+          const Padding(
             padding: EdgeInsets.all(16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -490,7 +504,7 @@ class Categoreis extends StatelessWidget {
               ],
             ),
           ),
-          Padding(
+          const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -613,7 +627,7 @@ class Categoreis extends StatelessWidget {
             ),
           ),
           ),
-          Padding(
+          const Padding(
             padding: EdgeInsets.all(16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -633,7 +647,7 @@ class Categoreis extends StatelessWidget {
               ],
             ),
           ),
-          Padding(
+          const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal, 
@@ -756,7 +770,7 @@ class Categoreis extends StatelessWidget {
             ),
           ),
           ),
-          Padding(
+          const Padding(
             padding: EdgeInsets.all(16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -776,7 +790,7 @@ class Categoreis extends StatelessWidget {
               ],
             ),
           ),
-          Padding(
+          const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
