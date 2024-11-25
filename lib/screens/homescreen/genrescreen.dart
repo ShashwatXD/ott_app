@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class ImageSelectionScreen extends StatefulWidget {
-  const ImageSelectionScreen({super.key});
+class Categories extends StatefulWidget {
+  const Categories({super.key});
 
   @override
-  ImageSelectionScreenState createState() => ImageSelectionScreenState();
+  CategoriesState createState() => CategoriesState();
 }
 
-class ImageSelectionScreenState extends State<ImageSelectionScreen> {
+class CategoriesState extends State<Categories> {
   List<bool> selectedButtons = List<bool>.filled(10, false);
 
   final List<String> genres = [
@@ -82,7 +82,7 @@ class ImageSelectionScreenState extends State<ImageSelectionScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Column(
                     children: [
-                      // genre buttons
+                     
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
