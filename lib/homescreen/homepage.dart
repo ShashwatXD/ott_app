@@ -6,14 +6,14 @@ class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
 
   Future<void> _logout(BuildContext context) async {
-    final secureStorage = FlutterSecureStorage();
-    await secureStorage.delete(key: 'token');
-
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const LoginPage()),
-      (Route<dynamic> route) => false,
-    );
-  }
+  final secureStorage = FlutterSecureStorage();
+  await secureStorage.delete(key: 'token');
+  await secureStorage.delete(key: 'user_email');
+  Navigator.of(context).pushAndRemoveUntil(
+    MaterialPageRoute(builder: (context) => const LoginPage()),
+    (Route<dynamic> route) => false,
+  );
+}
 
   @override
   Widget build(BuildContext context) {

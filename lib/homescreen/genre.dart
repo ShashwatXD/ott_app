@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:ott_app/loginservices/homepage.dart';
+import 'package:ott_app/homescreen/firstpage.dart';
+import 'package:ott_app/homescreen/homepage.dart';
 
 class ImageSelectionScreen extends StatefulWidget {
   const ImageSelectionScreen({super.key});
@@ -22,46 +23,12 @@ class ImageSelectionScreenState extends State<ImageSelectionScreen> {
   @override
   void initState() {
     super.initState();
-    _getTokenAndCheckGenre();
+    _getToken();
   }
 
-  Future<void> _getTokenAndCheckGenre() async {
+  Future<void> _getToken() async {
     final storage = FlutterSecureStorage();
     jwtToken = await storage.read(key: 'jwt_token');
-
-    if (jwtToken == null) 
-    
-    {
-      return;
-
-      
-    }
-
-
-
-
-    final response = await http.get(
-      Uri.parse('https://watch-movie-tzae.onrender.com/genre'),
-      headers: {
-        'Authorization': 'Bearer $jwtToken',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
-      final message = responseData['message'];
-
-      if (message == 'more than one login') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Error checking genre status")),
-      );
-    }
   }
 
   void toggleSelection(int index) {
@@ -75,35 +42,61 @@ class ImageSelectionScreenState extends State<ImageSelectionScreen> {
   }
 
   Future<void> _updateGenre(List<String> genres) async {
-    final response = await http.post(
-      Uri.parse('https://watch-movie-tzae.onrender.com/choice'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $jwtToken',
-      },
-      body: jsonEncode({
-        'genre': genres,
-        'email': 'legendshashwat.gkp@gmail.com',
-      }),
-    );
+    final storage = FlutterSecureStorage();
+    final userEmail = await storage.read(key: 'user_email');
 
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
-      final message = responseData['message'];
+    if (userEmail == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("User email not found")),
+      );
+      return;
+    }
 
-      if (message == 'genre updated successfully') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()), 
-        );
+    if (jwtToken == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Authentication token is missing")),
+      );
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://watch-movie-tzae.onrender.com/genre'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $jwtToken',
+        },
+        body: jsonEncode({
+          'genre': genres,
+          'email': userEmail,
+        }),
+      );
+
+      print('Response Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        final message = responseData['message'];
+
+        if (message == 'genre updated successfully') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const BottomNavScreen()), 
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message ?? "Unknown error occurred")),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
+          SnackBar(content: Text("Error updating genre: ${response.statusCode}")),
         );
       }
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Error updating genre")),
+        SnackBar(content: Text("Exception occurred: $e")),
       );
     }
   }
@@ -157,11 +150,9 @@ class ImageSelectionScreenState extends State<ImageSelectionScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Column(
                     children: [
-                      // Genre buttons
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // First column
                           Column(
                             mainAxisSize: MainAxisSize.min,
                             children: List.generate(5, (index) {
@@ -198,7 +189,6 @@ class ImageSelectionScreenState extends State<ImageSelectionScreen> {
                             }),
                           ),
                           const SizedBox(width: 16.0),
-                          // Second column
                           Column(
                             mainAxisSize: MainAxisSize.min,
                             children: List.generate(5, (index) {

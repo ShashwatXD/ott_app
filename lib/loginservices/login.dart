@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:ott_app/homescreen/firstpage.dart';
 import 'package:ott_app/homescreen/genre.dart';
 import 'package:ott_app/loginservices/forgetpassword.dart';
-import 'package:ott_app/loginservices/homepage.dart';
+import 'package:ott_app/homescreen/homepage.dart';
 import 'package:ott_app/loginservices/signup.dart';
 
 final secureStorage = FlutterSecureStorage();
@@ -74,14 +75,34 @@ Future<void> _login(BuildContext context) async {
         } else if (responseBody is String && responseBody.contains('There is no user')) {
           _showErrorDialog(context, 'No user found with this email');
         } else if (responseBody is String) {
-          // Assuming the response is a JWT token
           await secureStorage.write(key: 'token', value: responseBody);
+          await secureStorage.write(key: 'user_email', value: _emailController.text.trim());
+          
           ref.read(tokenProvider.notifier).state = responseBody;
 
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const HomePage()),
+          final genreResponse = await http.get(
+            Uri.parse('https://watch-movie-tzae.onrender.com/genre'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $responseBody',
+            },
           );
+
+          final genreResponseBody = jsonDecode(genreResponse.body);
+
+          if (genreResponse.statusCode == 200 && genreResponseBody['message'] == 'first login') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const ImageSelectionScreen()),
+            );
+          } else if (genreResponse.statusCode == 200) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const BottomNavScreen()),
+            );
+          } else {
+            _showErrorDialog(context, 'Error checking genre. Please try again.');
+          }
         }
       } else {
         _showErrorDialog(context, 'Login failed. Please try again.');
@@ -92,6 +113,7 @@ Future<void> _login(BuildContext context) async {
     }
   }
 }
+
 
 void _showErrorDialog(BuildContext context, String message) {
   showDialog(
