@@ -40,13 +40,12 @@ dependencies:
   animated_splash_screen: ^1.3.0
   flutter_riverpod: ^2.6.1
   http: ^1.2.2
-  better_player: ^0.0.84
+  flutter_secure_storage: ^9.0.0
    
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -70,9 +69,8 @@ flutter:
   assets:
     - images/phoenix.png
     - images/background.jpeg
+    - images/genere background.png
   #   - images/a_dot_ham.jpeg
-    - images/
-
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

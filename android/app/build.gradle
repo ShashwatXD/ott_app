@@ -1,9 +1,14 @@
+
+
+
 plugins {
     id "com.android.application"
     id "kotlin-android"
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
 }
+
+
 
 android {
     namespace = "com.example.ott_app"
@@ -38,6 +43,12 @@ android {
         }
     }
 }
+
+dependencies {
+    implementation 'javax.annotation:javax.annotation-api:1.3.2'
+    implementation 'com.google.errorprone:error_prone_annotations:2.13.1'
+}
+
 
 flutter {
     source = "../.."
