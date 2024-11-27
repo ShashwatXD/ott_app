@@ -18,11 +18,13 @@ class SplashScreen extends StatelessWidget {
     return AnimatedSplashScreen.withScreenFunction(
       splash: Image.asset(
         'images/phoenix.png', 
-        height: 160,
+        
       ),
+      splashTransition: SplashTransition.fadeTransition,
+      splashIconSize: 450,
       screenFunction: () => _determineNextScreen(),
-      duration: 2200,
-      backgroundColor: Colors.white,
+      duration: 1650,
+      backgroundColor: Colors.black,
     );
   }
 }

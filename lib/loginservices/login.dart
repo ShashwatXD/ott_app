@@ -90,18 +90,21 @@ Future<void> _login(BuildContext context) async {
           final genreResponseBody = jsonDecode(genreResponse.body);
 
           if (genreResponse.statusCode == 200 && genreResponseBody['message'] == 'first login') {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const ImageSelectionScreen()),
-            );
-          } else if (genreResponse.statusCode == 200) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const BottomNavScreen()),
-            );
-          } else {
-            _showErrorDialog(context, 'Error checking genre. Please try again.');
-          }
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(builder: (context) => const ImageSelectionScreen()),
+    (route) => false,
+  );
+} else if (genreResponse.statusCode == 200) {
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(builder: (context) => const BottomNavScreen()),
+    (route) => false,
+  );
+} else {
+  _showErrorDialog(context, 'Error checking genre. Please try again.');
+}
+
         }
       } else {
         _showErrorDialog(context, 'Login failed. Please try again.');
@@ -138,7 +141,7 @@ void _showErrorDialog(BuildContext context, String message) {
     final isPasswordVisible = ref.watch(passwordVisibilityProvider);
     final isLoading = ref.watch(isLoadingProvider);
 
-    return Scaffold(
+    return Scaffold( backgroundColor: Colors.black,
       body: SingleChildScrollView(
         child: Container(
           decoration: const BoxDecoration(

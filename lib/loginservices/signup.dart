@@ -127,7 +127,7 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
   Widget build(BuildContext context) {
     final isPasswordVisible = ref.watch(passwordVisibilityProvider);
 
-    return Scaffold(
+    return Scaffold(backgroundColor: Colors.black,
       body: SingleChildScrollView(
         child: Container(
           decoration: BoxDecoration(

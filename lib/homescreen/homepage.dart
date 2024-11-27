@@ -5,31 +5,13 @@ import 'package:ott_app/loginservices/login.dart';
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
 
-  Future<void> _logout(BuildContext context) async {
-  final secureStorage = FlutterSecureStorage();
-  await secureStorage.delete(key: 'token');
-  await secureStorage.delete(key: 'user_email');
-  Navigator.of(context).pushAndRemoveUntil(
-    MaterialPageRoute(builder: (context) => const LoginPage()),
-    (Route<dynamic> route) => false,
-  );
-}
+ 
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Home Page'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _logout(context),
-          ),
-        ],
-      ),
-      body: const Center(
-        child: Text('Welcome to the Home Page!'),
-      ),
+      
     );
   }
 }

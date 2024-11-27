@@ -45,7 +45,7 @@ class ForgetPasswordPage extends ConsumerWidget {
 
     final emailController = TextEditingController();
 
-    return Scaffold(
+    return Scaffold(backgroundColor: Colors.black,
       body: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
