@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ott_app/loginservices/login.dart';
+import 'package:ott_app/loginservices/lottie.dart';
 import 'package:ott_app/screens/homescreen/categoreis.dart';
 import 'package:ott_app/screens/homescreen/firstpage.dart';
 
@@ -18,7 +19,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue, 
       ),
-      home: const BottomNavScreen(), 
+      home: const SplashScreen(), 
     );
   }
 }

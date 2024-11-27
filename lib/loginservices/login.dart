@@ -13,7 +13,7 @@ class LoginPage extends ConsumerWidget {
 
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           image: DecorationImage(
             image: AssetImage('images/background.jpeg'),
             fit: BoxFit.cover,
