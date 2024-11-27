@@ -1,62 +1,51 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'categorymodel.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:ott_app/screens/homescreen/categorymodel.dart';
 
-// Movie state class to handle loading, success, and error states
-class MovieState {
-  final bool isLoading;
-  final List<Movie> movies;
-  final String? error;
+final secureStorage = FlutterSecureStorage();
 
-  MovieState({
-    required this.isLoading,
-    required this.movies,
-    this.error,
-  });
+class MoviesNotifier extends StateNotifier<List<Movie>> {
+  MoviesNotifier() : super([]);
 
-  // A factory to create a loading state
-  factory MovieState.loading() => MovieState(isLoading: true, movies: []);
-
-  // A factory for the success state with a list of movies
-  factory MovieState.success(List<Movie> movies) =>
-      MovieState(isLoading: false, movies: movies);
-
-  // A factory for the error state with an error message
-  factory MovieState.error(String error) =>
-      MovieState(isLoading: false, movies: [], error: error);
-}
-
-// Define a state notifier to manage the state of the movies
-class MovieNotifier extends StateNotifier<MovieState> {
-  MovieNotifier() : super(MovieState.loading());
-
-  // Fetch movies from the API with authentication using the access token
   Future<void> fetchMovies() async {
-    final url = Uri.parse('https://watch-movie-tzae.onrender.com/videos');
-    final accessToken = 'YOUR_ACCESS_TOKEN';  // Replace with a valid token
-    final headers = {
-      'Authorization': 'Bearer $accessToken',
-    };
+    const url = 'https://watch-movie-tzae.onrender.com/videos';
+
+  
+    String? token = await _getToken();
+    if (token == null) {
+      throw Exception("Token not found");
+    }
 
     try {
-      final response = await http.get(url, headers: headers);
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token', 
+          'Content-Type': 'application/json',
+        },
+      );
 
       if (response.statusCode == 200) {
-        final List<dynamic> moviesJson = jsonDecode(response.body);
-        final movies = moviesJson.map((movie) => Movie.fromJson(movie)).toList();
-        state = MovieState.success(movies); // Update state with fetched movies
+        final List<dynamic> jsonData = jsonDecode(response.body);
+
+        final movies = jsonData.map((movie) => Movie.fromJson(movie)).toList();
+
+        state = movies;
       } else {
-        state = MovieState.error('Failed to load movies');
+        throw Exception('Failed to fetch movies: ${response.statusCode}');
       }
-    } catch (error) {
-      state = MovieState.error('Failed to fetch movies: $error');
+    } catch (e) {
+      print('Error fetching movies: $e');
+      state = []; 
     }
   }
-}
 
-// Create a provider for the MovieNotifier
-final movieProvider =
-    StateNotifierProvider<MovieNotifier, MovieState>((ref) {
-  return MovieNotifier();
-});
+  Future<String?> _getToken() async {
+    return await secureStorage.read(key: 'jwt_token');
+  }
+}
+final moviesProvider = StateNotifierProvider<MoviesNotifier, List<Movie>>(
+  (ref) => MoviesNotifier(),
+);
