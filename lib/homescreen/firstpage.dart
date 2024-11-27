@@ -19,7 +19,7 @@ class BottomNavScreen extends ConsumerWidget {
       const Searchscreen(),
       const Categories(),
       const AccountScreen(),
-    ];
+
 
  
     final currentIndex = ref.watch(bottomNavIndexProvider);

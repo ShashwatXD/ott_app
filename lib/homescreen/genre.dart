@@ -28,6 +28,7 @@ class ImageSelectionScreenState extends State<ImageSelectionScreen> {
   Future<void> _getToken() async {
     final storage = FlutterSecureStorage();
     jwtToken = await storage.read(key: 'token');
+
   }
 
   void toggleSelection(int index) {
@@ -104,6 +105,7 @@ class ImageSelectionScreenState extends State<ImageSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body:  Stack(
+
           children: [
             Positioned.fill(
               child: Image.asset(
@@ -265,7 +267,9 @@ class ImageSelectionScreenState extends State<ImageSelectionScreen> {
             ),
           ],
         ),
+
       );
     
+
   }
 }
