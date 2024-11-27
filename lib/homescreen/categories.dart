@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
-class Categoreis extends StatelessWidget {
-  const Categoreis({super.key});
+
+class Categories extends StatelessWidget {
+  const Categories({super.key});
+
 
   @override
   Widget build(BuildContext context) {

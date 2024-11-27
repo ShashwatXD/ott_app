@@ -17,9 +17,9 @@ class BottomNavScreen extends ConsumerWidget {
     final List<Widget> screens = [
       const HomePage(),
       const Searchscreen(),
-      const Categoreis(),
-      const Profilescreen(),
-    ];
+      const Categories(),
+      const AccountScreen(),
+
 
  
     final currentIndex = ref.watch(bottomNavIndexProvider);
