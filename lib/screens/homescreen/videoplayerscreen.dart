@@ -8,7 +8,8 @@ class VideoPlayerScreen extends StatelessWidget {
   const VideoPlayerScreen({Key? key, required this.videoPath, this.isNetwork = true}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build
+  (BuildContext context) {
     BetterPlayerDataSource betterPlayerDataSource = BetterPlayerDataSource(
       isNetwork ? BetterPlayerDataSourceType.network : BetterPlayerDataSourceType.file,
       videoPath,
