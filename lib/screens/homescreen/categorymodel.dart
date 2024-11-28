@@ -1,4 +1,4 @@
-/// Movie Model
+
 class Movie {
   final String id;
   final String movieName;

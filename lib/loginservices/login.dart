@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:ott_app/homescreen/firstpage.dart';
-import 'package:ott_app/homescreen/genre.dart';
+import 'package:ott_app/screens/homescreen/genre.dart';
 import 'package:ott_app/loginservices/forgetpassword.dart';
 import 'package:ott_app/loginservices/signup.dart';
+import 'package:ott_app/screens/homescreen/firstpage.dart';
 
 final secureStorage = FlutterSecureStorage();
 

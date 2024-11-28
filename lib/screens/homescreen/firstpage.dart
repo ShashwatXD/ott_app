@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'homeprovider.dart';
-import 'homescreen.dart';
-import 'profilescreen.dart';
-import 'searchscreen.dart';
-import 'categoreis.dart';
+import 'package:ott_app/screens/homescreen/categories.dart';
+import 'package:ott_app/screens/homescreen/homepage.dart';
+import 'package:ott_app/screens/homescreen/profilepage.dart';
+import 'package:ott_app/screens/homescreen/searchscreen.dart';
+
+
+final bottomNavIndexProvider = StateProvider<int>((ref) => 0);
+
 
 class BottomNavScreen extends ConsumerWidget {
   const BottomNavScreen({super.key});
@@ -13,12 +16,12 @@ class BottomNavScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     
     final List<Widget> screens = [
-      const Homescreen(),
-      const Searchscreen(),
+      const Homepage(),
+       SearchScreen(),
       const CategoryScreen(),
-      const Profilescreen(),
-    ];
+      const AccountScreen(),
 
+    ];
  
     final currentIndex = ref.watch(bottomNavIndexProvider);
 
