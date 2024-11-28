@@ -1,8 +1,8 @@
 import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:ott_app/homescreen/firstpage.dart';
 import 'package:ott_app/loginservices/login.dart';
+import 'package:ott_app/screens/homescreen/firstpage.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});

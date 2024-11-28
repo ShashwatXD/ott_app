@@ -40,7 +40,8 @@ dependencies:
   animated_splash_screen: ^1.3.0
   flutter_riverpod: ^2.6.1
   http: ^1.2.2
-  flutter_secure_storage: ^9.0.0
+  better_player: ^0.0.84
+  flutter_secure_storage: ^9.2.2
    
 
 dev_dependencies:
