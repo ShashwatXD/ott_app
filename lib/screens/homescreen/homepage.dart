@@ -96,7 +96,7 @@ class _HomepageState extends State<Homepage> {
               },
             ),
             const Text(
-              'Categories',
+              'Home',
               style: TextStyle(color: Colors.white),
             ),
           ],
