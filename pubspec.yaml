@@ -42,7 +42,8 @@ dependencies:
   http: ^1.2.2
   better_player: ^0.0.84
   flutter_secure_storage: ^9.2.2
-   
+  video_player: ^2.9.2
+  share_plus: ^10.1.2
 
 dev_dependencies:
   flutter_test:

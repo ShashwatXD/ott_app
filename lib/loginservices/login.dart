@@ -49,99 +49,104 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
     return null;
   }
-  
-Future<void> _login(BuildContext context) async {
-  if (_formKey.currentState!.validate()) {
-    ref.read(isLoadingProvider.notifier).state = true;
 
-    try {
-      final response = await http.post(
-        Uri.parse('https://watch-movie-tzae.onrender.com/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': _emailController.text.trim(),
-          'password': _passwordController.text,
-        }),
-      );
+  Future<void> _login(BuildContext context) async {
+    if (_formKey.currentState!.validate()) {
+      ref.read(isLoadingProvider.notifier).state = true;
 
-      ref.read(isLoadingProvider.notifier).state = false;
+      try {
+        final response = await http.post(
+          Uri.parse('https://watch-movie-tzae.onrender.com/login'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': _emailController.text.trim(),
+            'password': _passwordController.text,
+          }),
+        );
 
-      final responseBody = jsonDecode(response.body);
+        ref.read(isLoadingProvider.notifier).state = false;
 
-      if (response.statusCode == 200) {
-        if (responseBody is String && responseBody.contains('Incorrect Password')) {
-          _showErrorDialog(context, 'Incorrect Password');
-        } else if (responseBody is String && responseBody.contains('There is no user')) {
-          _showErrorDialog(context, 'No user found with this email');
-        } else if (responseBody is String) {
-          await secureStorage.write(key: 'token', value: responseBody);
-          await secureStorage.write(key: 'user_email', value: _emailController.text.trim());
+        final responseBody = jsonDecode(response.body);
+
+        if (response.statusCode == 200) {
+          if (responseBody is String && responseBody.contains('Incorrect Password')) {
+            _showErrorDialog(context, 'Incorrect Password');
+          } else if (responseBody is String && responseBody.contains('There is no user')) {
+            _showErrorDialog(context, 'No user found with this email');
+          } else if (responseBody is String) {
+            await secureStorage.write(key: 'token', value: responseBody);
+            await secureStorage.write(key: 'user_email', value: _emailController.text.trim());
+
+           
+            print('Login successful, responseBody: $responseBody');
+
           
-          ref.read(tokenProvider.notifier).state = responseBody;
+            final userId = responseBody; 
+            print('User ID: $userId');
+            
+            ref.read(tokenProvider.notifier).state = responseBody;
 
-          final genreResponse = await http.get(
-            Uri.parse('https://watch-movie-tzae.onrender.com/genre'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $responseBody',
-            },
-          );
+            final genreResponse = await http.get(
+              Uri.parse('https://watch-movie-tzae.onrender.com/genre'),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $responseBody',
+              },
+            );
 
-          final genreResponseBody = jsonDecode(genreResponse.body);
+            final genreResponseBody = jsonDecode(genreResponse.body);
 
-          if (genreResponse.statusCode == 200 && genreResponseBody['message'] == 'first login') {
-  Navigator.pushAndRemoveUntil(
-    context,
-    MaterialPageRoute(builder: (context) => const ImageSelectionScreen()),
-    (route) => false,
-  );
-} else if (genreResponse.statusCode == 200) {
-  Navigator.pushAndRemoveUntil(
-    context,
-    MaterialPageRoute(builder: (context) => const BottomNavScreen()),
-    (route) => false,
-  );
-} else {
-  _showErrorDialog(context, 'Error checking genre. Please try again.');
-}
-
+            if (genreResponse.statusCode == 200 && genreResponseBody['message'] == 'first login') {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const ImageSelectionScreen()),
+                (route) => false,
+              );
+            } else if (genreResponse.statusCode == 200) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const BottomNavScreen()),
+                (route) => false,
+              );
+            } else {
+              _showErrorDialog(context, 'Error checking genre. Please try again.');
+            }
+          }
+        } else {
+          _showErrorDialog(context, 'Login failed. Please try again.');
         }
-      } else {
-        _showErrorDialog(context, 'Login failed. Please try again.');
+      } catch (e) {
+        ref.read(isLoadingProvider.notifier).state = false;
+        _showErrorDialog(context, 'Network error. Please check your connection.');
       }
-    } catch (e) {
-      ref.read(isLoadingProvider.notifier).state = false;
-      _showErrorDialog(context, 'Network error. Please check your connection.');
     }
   }
-}
 
-
-void _showErrorDialog(BuildContext context, String message) {
-  showDialog(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Login Error'),
-      content: Text(message),
-      actions: <Widget>[
-        TextButton(
-          child: const Text('Okay'),
-          onPressed: () {
-            Navigator.of(ctx).pop();
-          },
-        )
-      ],
-    ),
-  );
-}
- 
+  void _showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Login Error'),
+        content: Text(message),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Okay'),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+            },
+          )
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final isPasswordVisible = ref.watch(passwordVisibilityProvider);
     final isLoading = ref.watch(isLoadingProvider);
 
-    return Scaffold( backgroundColor: Colors.black,
+    return Scaffold(
+      backgroundColor: Colors.black,
       body: SingleChildScrollView(
         child: Container(
           decoration: const BoxDecoration(
@@ -278,37 +283,35 @@ void _showErrorDialog(BuildContext context, String message) {
                               height: 24,
                               child: CircularProgressIndicator(
                                 color: Colors.white,
+                                strokeWidth: 3,
                               ),
                             )
-                          : const Text(
-                              "Login",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
+                          : const Text('Login'),
                     ),
-                    const SizedBox(height: 20),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SignUpPage(),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        "Don't have an Account? Sign up",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          decoration: TextDecoration.underline,
+                    const SizedBox(height: 30),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          "Don't have an account? ",
+                          style: TextStyle(color: Colors.white),
                         ),
-                      ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const SignUpPage(),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Sign Up',
+                            style: TextStyle(color: Colors.green),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 290),
                   ],
                 ),
               ),
