@@ -20,25 +20,22 @@ class _MovieDescriptionScreenState extends State<MovieDescriptionScreen> {
 
   final FlutterSecureStorage secureStorage = FlutterSecureStorage(); 
 
-
   @override
   void initState() {
     super.initState();
     _checkIfLiked();
   }
+
   void _checkIfLiked() {
     setState(() {
-      print("Movie Data: ${widget.movie}");
       int likeCount = int.tryParse(widget.movie['like'].toString()) ?? 0;
-      print("Like Count: $likeCount");
       isLiked = likeCount > 0;
     });
   }
+
   Future<void> _toggleLike() async {
     final movieId = widget.movie['_id'];
     const url = 'https://watch-movie-tzae.onrender.com/like'; 
-
-    print("Toggling like for movie ID: $movieId");
 
     String? token = await secureStorage.read(key: 'token');
     if (token == null) {
@@ -58,23 +55,23 @@ class _MovieDescriptionScreenState extends State<MovieDescriptionScreen> {
         },
       );
 
-      print("Response Status Code: ${response.statusCode}");
-      print("Response Body: ${response.body}");
-
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        print("Response from server: $responseData");
-
-        if (responseData['success'] == true) {
+        if (responseData == 1) { 
           setState(() {
-            isLiked = !isLiked;
+            isLiked = true;
           });
+          await secureStorage.write(key: 'movie_id', value: movieId);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(isLiked ? "Movie liked successfully!" : "Movie unliked successfully!")),
+            const SnackBar(content: Text("Movie liked successfully!")),
           );
-        } else {
+        } else if (responseData == 0) { 
+          setState(() {
+            isLiked = false;
+          });
+          await secureStorage.delete(key: 'movie_id');
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Failed to like/unlike the movie.")),
+            const SnackBar(content: Text("Movie unliked successfully!")),
           );
         }
       } else {
@@ -83,7 +80,46 @@ class _MovieDescriptionScreenState extends State<MovieDescriptionScreen> {
         );
       }
     } catch (e) {
-      print("Error occurred: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    }
+  }
+// sending movie id to watchlist api
+  Future<void> _addToWatchlist() async {
+    final movieId = widget.movie['_id'];
+    final movieName = widget.movie['title'] ?? 'Unknown Movie';
+
+    String? token = await secureStorage.read(key: 'token');
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No token found. Please log in again.")),
+      );
+      return; 
+    }
+
+    const url = 'https://watch-movie-tzae.onrender.com/watchlist';
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'id': movieId,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$movieName added to Watchlist!')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to add movie to watchlist. Status Code: ${response.statusCode}")),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e")),
       );
@@ -101,7 +137,6 @@ class _MovieDescriptionScreenState extends State<MovieDescriptionScreen> {
         children: [
           Column(
             children: [
-              
               Container(
                 width: double.infinity,
                 height: MediaQuery.of(context).size.height * 0.5,
@@ -197,7 +232,6 @@ class _MovieDescriptionScreenState extends State<MovieDescriptionScreen> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                     
                         Center(
                           child: ElevatedButton.icon(
                             onPressed: () {
@@ -205,8 +239,8 @@ class _MovieDescriptionScreenState extends State<MovieDescriptionScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => VideoScreen(
-                                      videoPath: trailerUrl,
+                                    builder: (context) => VideoStreamScreen(
+                                      videoUrl: trailerUrl,
                                     ),
                                   ),
                                 );
@@ -234,18 +268,14 @@ class _MovieDescriptionScreenState extends State<MovieDescriptionScreen> {
                           ),
                         ),
                         const SizedBox(height: 10),
-                       
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            
                             Column(
                               children: [
                                 IconButton(
                                   icon: const Icon(Icons.playlist_add, color: Colors.white),
-                                  onPressed: () {
-                                    
-                                  },
+                                  onPressed: _addToWatchlist,  
                                 ),
                                 const Text(
                                   "Watchlist",
@@ -253,7 +283,22 @@ class _MovieDescriptionScreenState extends State<MovieDescriptionScreen> {
                                 ),
                               ],
                             ),
-                            
+                            Column(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.download, color: Colors.white),
+                                  onPressed: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text("Download clicked!")),
+                                    );
+                                  },
+                                ),
+                                const Text(
+                                  "Download",
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ],
+                            ),
                             Column(
                               children: [
                                 IconButton(
@@ -269,22 +314,6 @@ class _MovieDescriptionScreenState extends State<MovieDescriptionScreen> {
                                 ),
                               ],
                             ),
-                            
-                            Column(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.download, color: Colors.white),
-                                  onPressed: () {
-                                    
-                                  },
-                                ),
-                                const Text(
-                                  "Download",
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ],
-                            ),
-                           
                             Column(
                               children: [
                                 IconButton(
@@ -292,23 +321,30 @@ class _MovieDescriptionScreenState extends State<MovieDescriptionScreen> {
                                     isLiked ? Icons.favorite : Icons.favorite_border,
                                     color: isLiked ? Colors.red : Colors.white,
                                   ),
-                                  onPressed: _toggleLike, 
+                                  onPressed: _toggleLike,
                                 ),
                                 const Text(
-                                  "Rate",
+                                  "Like",
                                   style: TextStyle(color: Colors.white),
                                 ),
                               ],
                             ),
                           ],
                         ),
-                        const SizedBox(height: 30),
                       ],
                     ),
                   ),
                 ),
               ),
             ],
+          ),
+          SafeArea(
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
           ),
         ],
       ),

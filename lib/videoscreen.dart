@@ -1,26 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
-class VideoScreen extends StatefulWidget {
-  final String videoPath;
+class VideoStreamScreen extends StatefulWidget {
+  final String videoUrl;
 
-  const VideoScreen({Key? key, required this.videoPath}) : super(key: key);
+  const VideoStreamScreen({Key? key, required this.videoUrl}) : super(key: key);
 
   @override
-  State<VideoScreen> createState() => _VideoScreenState();
+  State<VideoStreamScreen> createState() => _VideoStreamScreenState();
 }
 
-class _VideoScreenState extends State<VideoScreen> {
+class _VideoStreamScreenState extends State<VideoStreamScreen> {
   late VideoPlayerController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.network(widget.videoPath)
+
+   
+    _controller = VideoPlayerController.network(
+      widget.videoUrl,
+      httpHeaders: {
+        'Range': 'bytes=0-',
+      },
+    )
       ..initialize().then((_) {
         setState(() {});
-        _controller.play();
-      });
+      })
+      ..setLooping(true)
+      ..play();
   }
 
   @override
@@ -32,10 +40,8 @@ class _VideoScreenState extends State<VideoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF04130C),
-        title: const Text("Video Player", style: TextStyle(color: Colors.white)),
+        title: const Text('Video Stream'),
       ),
       body: Center(
         child: _controller.value.isInitialized
@@ -43,10 +49,9 @@ class _VideoScreenState extends State<VideoScreen> {
                 aspectRatio: _controller.value.aspectRatio,
                 child: VideoPlayer(_controller),
               )
-            : const CircularProgressIndicator(color: Colors.white),
+            : const CircularProgressIndicator(),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF056431),
         onPressed: () {
           setState(() {
             _controller.value.isPlaying ? _controller.pause() : _controller.play();
@@ -54,7 +59,6 @@ class _VideoScreenState extends State<VideoScreen> {
         },
         child: Icon(
           _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
-          color: Colors.white,
         ),
       ),
     );

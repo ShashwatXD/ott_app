@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:ott_app/loginservices/login.dart';
 import 'package:http/http.dart' as http;
+import 'package:ott_app/loginservices/login.dart';
 import 'package:ott_app/screens/homescreen/likedmovies.dart';
+import 'dart:convert';
+
+import 'package:ott_app/watchlist.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({Key? key}) : super(key: key);
@@ -14,24 +17,54 @@ class AccountScreen extends StatefulWidget {
 class _AccountScreenState extends State<AccountScreen> {
   String? userEmail;
   String? authToken;
-  String? movieId; 
+  String? movieId;
 
   @override
   void initState() {
     super.initState();
     _getUserData();
   }
+  Future<void> _fetchMovieIdFromAPI() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://watch-movie-tzae.onrender.com/description'),
+        headers: {
+          'Authorization': 'Bearer $authToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final movieIdString = data[1]['movie_id'].toString();
+
+        final storage = FlutterSecureStorage();
+        await storage.write(key: 'movie_id', value: movieIdString);
+
+        setState(() {
+          this.movieId = movieIdString;
+        });
+      }
+    } catch (e) {
+      print('Error fetching movie data: $e');
+    }
+  }
 
   Future<void> _getUserData() async {
     final storage = FlutterSecureStorage();
+
     final email = await storage.read(key: 'user_email');
     final token = await storage.read(key: 'token');
-    final movie = await storage.read(key: 'movie_id'); 
+    final movie = await storage.read(key: 'movie_id');
+
     setState(() {
       userEmail = email ?? 'Unknown User';
       authToken = token;
       movieId = movie;
     });
+
+    if (movieId == null) {
+      await _fetchMovieIdFromAPI();
+    }
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -65,31 +98,6 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
-  Future<void> _deleteAccount() async {
-    if (authToken != null) {
-      try {
-        final response = await http.get(
-          Uri.parse('https://watch-movie-tzae.onrender.com/delete'),
-          headers: {'Authorization': 'Bearer $authToken'},
-        );
-
-        if (response.statusCode == 200) {
-          print('Account deleted');
-          final secureStorage = FlutterSecureStorage();
-          await secureStorage.deleteAll();
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const LoginPage()),
-            (Route<dynamic> route) => false,
-          );
-        } else {
-          print('Failed to delete account');
-        }
-      } catch (e) {
-        print('Error deleting account: $e');
-      }
-    }
-  }
-
   Future<void> _showDeleteConfirmationDialog() async {
     showDialog(
       context: context,
@@ -115,6 +123,28 @@ class _AccountScreenState extends State<AccountScreen> {
         );
       },
     );
+  }
+
+  Future<void> _deleteAccount() async {
+    if (authToken != null) {
+      try {
+        final response = await http.get(
+          Uri.parse('https://watch-movie-tzae.onrender.com/delete'),
+          headers: {'Authorization': 'Bearer $authToken'},
+        );
+
+        if (response.statusCode == 200) {
+          final secureStorage = FlutterSecureStorage();
+          await secureStorage.deleteAll();
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+            (Route<dynamic> route) => false,
+          );
+        }
+      } catch (e) {
+        print('Error deleting account: $e');
+      }
+    }
   }
 
   @override
@@ -184,7 +214,18 @@ class _AccountScreenState extends State<AccountScreen> {
                         ListTile(
                           leading: const Icon(Icons.bookmark, color: Colors.white),
                           title: const Text("Watchlist", style: TextStyle(color: Colors.white)),
-                          onTap: () {},
+                          onTap: () {
+                            if (authToken != null) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => WatchlistScreen(
+                                    authToken: authToken!,
+                                    movieId: movieId!,),
+                                ),
+                              );
+                            }
+                          },
                         ),
                         ListTile(
                           leading: const Icon(Icons.thumb_up, color: Colors.white),
@@ -195,13 +236,11 @@ class _AccountScreenState extends State<AccountScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => LikedMoviesScreen(
-                                    authToken: authToken!, 
-                                    movieId: movieId!, 
+                                    authToken: authToken!,
+                                    movieId: movieId!,
                                   ),
                                 ),
                               );
-                            } else {
-                              print("Auth token or movie ID is null");
                             }
                           },
                         ),

@@ -2,28 +2,66 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-class LikedMoviesScreen extends StatelessWidget {
-  final String movieId;
+import 'package:ott_app/moviedesciptionscreen.dart';
+
+class LikedMoviesScreen extends StatefulWidget {
   final String authToken;
+  final String movieId;
 
   const LikedMoviesScreen({
     Key? key,
-    required this.movieId,
     required this.authToken,
+    required this.movieId,
   }) : super(key: key);
 
-  Future<Map<String, dynamic>> fetchLikedMovies() async {
-    final response = await http.get(
-      Uri.parse('https://watch-movie-tzae.onrender.com/like/$movieId'),
-      headers: {
-        'Authorization': 'Bearer $authToken',
-      },
-    );
+  @override
+  _LikedMoviesScreenState createState() => _LikedMoviesScreenState();
+}
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load liked movies');
+class _LikedMoviesScreenState extends State<LikedMoviesScreen> {
+  List<dynamic> likedMovies = [];
+  bool isLoading = true;
+  String errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLikedMovies();
+  }
+
+  Future<void> _fetchLikedMovies() async {
+    try {
+      print("Fetching liked movies from the backend...");
+      final response = await http.get(
+        Uri.parse('https://watch-movie-tzae.onrender.com/like'),
+        headers: {
+          'Authorization': 'Bearer ${widget.authToken}',
+        },
+      );
+
+      print("API Response Status Code: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List<dynamic>;
+        print("Fetched Liked Movies Data: $data");
+
+        setState(() {
+          likedMovies = data;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+          errorMessage = 'Failed to fetch liked movies (Status Code: ${response.statusCode})';
+        });
+        print(errorMessage);
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+        errorMessage = 'Error fetching liked movies: $e';
+      });
+      print(errorMessage);
     }
   }
 
@@ -32,40 +70,52 @@ class LikedMoviesScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Liked Movies'),
-        backgroundColor: const Color(0xFF04130C),
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: fetchLikedMovies(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(
-              child: Text('Error: ${snapshot.error}'),
-            );
-          } else {
-            final movies = snapshot.data!['movies'] as List<dynamic>;
-            return ListView.builder(
-              itemCount: movies.length,
-              itemBuilder: (context, index) {
-                final movie = movies[index];
-                return ListTile(
-                  title: Text(
-                    movie['title'], 
-                    style: const TextStyle(color: Colors.white),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : likedMovies.isEmpty
+              ? Center(
+                  child: Text(
+                    errorMessage.isEmpty ? 'No liked movies found.' : errorMessage,
+                    style: const TextStyle(fontSize: 16),
                   ),
-                  subtitle: Text(
-                    movie['genre'],
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                  leading: Image.network(movie['thumbnailUrl']),
-                );
-              },
-            );
-          }
-        },
-      ),
-      backgroundColor: const Color(0xFF03130B),
+                )
+              : ListView.builder(
+                  itemCount: likedMovies.length,
+                  itemBuilder: (context, index) {
+                    final movie = likedMovies[index];
+                    return ListTile(
+                      
+                      leading: Image.network(
+                        
+                        movie['poster_url'] ??'',
+                        width: 50,
+                        height: 75,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.broken_image, size: 50),
+                      ),
+                      title: Text(
+                        movie['title'] ?? 'Unknown Title',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        movie['overview'] ?? 'No description available.',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MovieDescriptionScreen(movie: movie),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
     );
   }
 }
+

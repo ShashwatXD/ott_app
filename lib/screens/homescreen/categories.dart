@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:ott_app/moviedesciptionscreen.dart'; 
+import 'package:ott_app/moviedesciptionscreen.dart';
 
 class CategoryScreen extends StatefulWidget {
   const CategoryScreen({Key? key}) : super(key: key);
@@ -37,7 +37,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
     if (response.statusCode == 200) {
       try {
-        final List<dynamic> movies = json.decode(response.body);
+        final List<dynamic> movies = json.decode(response.body) ?? [];
         return movies;
       } catch (e) {
         throw Exception('Failed to parse response: $e');
@@ -89,7 +89,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
               },
             ),
             const Text(
-              'Home',
+              'Categories',
               style: TextStyle(color: Colors.white),
             ),
           ],
@@ -117,7 +117,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
             } else if (snapshot.hasError) {
               return Center(child: Text('Error: ${snapshot.error}'));
             } else if (snapshot.hasData) {
-              final movies = snapshot.data!;
+              final movies = snapshot.data ?? [];
               List<String> genres = [
                 "Romance",
                 "Action",
@@ -170,9 +170,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                     ]
                                   : filterMoviesByGenre(movies, genre)
                                       .map<Widget>((movie) {
-                                      final title = movie['title'];
-                                      final posterUrl = movie['poster_url'];
-                                      final movieData = movie; 
+                                      final title = movie['title'] ?? 'No Title';
+                                      final posterUrl = movie['poster_url'] ?? '';
+                                      final movieData = movie;
 
                                       return GestureDetector(
                                         onTap: () {
@@ -181,7 +181,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                             MaterialPageRoute(
                                               builder: (context) =>
                                                   MovieDescriptionScreen(
-                                                movie: movieData, 
+                                                movie: movieData,
                                               ),
                                             ),
                                           );
@@ -213,20 +213,28 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                                               Radius.circular(8),
                                                           topRight:
                                                               Radius.circular(8)),
-                                                  child: Image.network(
-                                                    posterUrl,
-                                                    width: 150,
-                                                    height: 130,
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder: (context,
-                                                        error, stackTrace) {
-                                                      return const Icon(
-                                                        Icons.image_not_supported,
-                                                        size: 100,
-                                                        color: Colors.grey,
-                                                      );
-                                                    },
-                                                  ),
+                                                  child: posterUrl.isNotEmpty
+                                                      ? Image.network(
+                                                          posterUrl,
+                                                          width: 150,
+                                                          height: 130,
+                                                          fit: BoxFit.cover,
+                                                          errorBuilder:
+                                                              (context, error,
+                                                                  stackTrace) {
+                                                            return const Icon(
+                                                              Icons
+                                                                  .image_not_supported,
+                                                              size: 100,
+                                                              color: Colors.grey,
+                                                            );
+                                                          },
+                                                        )
+                                                      : const Icon(
+                                                          Icons.image_not_supported,
+                                                          size: 100,
+                                                          color: Colors.grey,
+                                                        ),
                                                 ),
                                               ),
                                               Padding(
