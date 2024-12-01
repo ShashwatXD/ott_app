@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:ott_app/moviedesciptionscreen.dart';
+import 'package:ott_app/screens/homescreen/homepage.dart'; // Assuming you'll create this file
 
 class CategoryScreen extends StatefulWidget {
   const CategoryScreen({Key? key}) : super(key: key);
@@ -12,79 +11,85 @@ class CategoryScreen extends StatefulWidget {
 }
 
 class _CategoryScreenState extends State<CategoryScreen> {
-  late Future<List<dynamic>> moviesFuture;
+  final AppDataManager _appDataManager = AppDataManager();
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    moviesFuture = fetchMovies();
+    _loadInitialData();
   }
 
-  Future<List<dynamic>> fetchMovies() async {
-    final storage = FlutterSecureStorage();
-    final token = await storage.read(key: 'token');
-
-    if (token == null) {
-      throw Exception("Token is not available");
+  Future<void> _loadInitialData() async {
+    final storage = const FlutterSecureStorage();
+    String? jwtToken = await storage.read(key: 'token');
+    
+    if (jwtToken == null) {
+      print("Token not found!");
+      setState(() => _isLoading = false);
+      return;
     }
 
-    final response = await http.get(
-      Uri.parse('https://watch-movie-tzae.onrender.com/description'),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
+    // If data is not loaded, fetch it
+    if (!_appDataManager.isDataLoaded) {
+      await _appDataManager.fetchInitialData(jwtToken);
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  void navigateToDescription(Map<String, dynamic> movie) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MovieDescriptionScreen(movie: movie),
+      ),
     );
-
-    if (response.statusCode == 200) {
-      try {
-        final List<dynamic> movies = json.decode(response.body) ?? [];
-        return movies;
-      } catch (e) {
-        throw Exception('Failed to parse response: $e');
-      }
-    } else {
-      throw Exception(
-          'Failed to load movies. Status Code: ${response.statusCode}');
-    }
-  }
-
-  List<String> flattenGenres(dynamic genres) {
-    if (genres == null) {
-      return [];
-    }
-    if (genres is List) {
-      return genres
-          .expand((e) => e is List ? e : [e])
-          .map((e) => e.toString().trim().toLowerCase())
-          .toList();
-    } else if (genres is String) {
-      return [genres.trim().toLowerCase()];
-    }
-    return [];
-  }
-
-  List<dynamic> filterMoviesByGenre(List<dynamic> movies, String genre) {
-    genre = genre.trim().toLowerCase();
-
-    return movies.where((movie) {
-      var movieGenres = movie['genres'] ?? [];
-      movieGenres = flattenGenres(movieGenres);
-      return movieGenres.contains(genre);
-    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF03130B).withOpacity(1),
+                const Color(0xFF03130B).withOpacity(0.9),
+                const Color(0xFF03130B).withOpacity(0.9),
+              ],
+              stops: const [0.1, 0.5, 0.9],
+            ),
+          ),
+          child: const Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(
+                  color: Colors.white,
+                ),
+                SizedBox(height: 20),
+                Text(
+                  "Loading Categories...",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            
-            const Text(
-              'Categories',
-              style: TextStyle(color: Colors.white),
-            ),
-          ],
+        title: const Text(
+          'Categories',
+          style: TextStyle(color: Colors.white),
         ),
         backgroundColor: const Color(0xFF04130C),
       ),
@@ -101,166 +106,118 @@ class _CategoryScreenState extends State<CategoryScreen> {
             stops: const [0.1, 0.5, 0.9],
           ),
         ),
-        child: FutureBuilder<List<dynamic>>(
-          future: moviesFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
-            } else if (snapshot.hasData) {
-              final movies = snapshot.data ?? [];
-              List<String> genres = [
-                "Romance",
-                "Action",
-                "Comedy",
-                "Drama",
-                "Horror",
-                "Thriller",
-                "Sci-Fi",
-                "Fantasy",
-                "Adventure",
-                "Mystery"
-              ];
-
-              return ListView(
-                children: [
-                  const Divider(
-                    color: Color(0xFF068441),
-                    thickness: 1,
-                    height: 0,
-                  ),
-                  for (var genre in genres)
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            genre,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: filterMoviesByGenre(movies, genre).isEmpty
-                                  ? [
-                                      const Padding(
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 8.0),
-                                        child: Text(
-                                          "No movies available for this genre.",
-                                          style: TextStyle(
-                                              color: Colors.grey, fontSize: 14),
-                                        ),
-                                      ),
-                                    ]
-                                  : filterMoviesByGenre(movies, genre)
-                                      .map<Widget>((movie) {
-                                      final title = movie['title'] ?? 'No Title';
-                                      final posterUrl = movie['poster_url'] ?? '';
-                                      final movieData = movie;
-
-                                      return GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  MovieDescriptionScreen(
-                                                movie: movieData,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        child: Container(
-                                          margin: const EdgeInsets.only(right: 8),
-                                          width: 150,
-                                          height: 200,
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF03100A),
-                                            borderRadius: BorderRadius.circular(8),
-                                            boxShadow: const [
-                                              BoxShadow(
-                                                color: Colors.black26,
-                                                blurRadius: 6,
-                                                offset: Offset(0, 4),
-                                              ),
-                                            ],
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Expanded(
-                                                child: ClipRRect(
-                                                  borderRadius:
-                                                      const BorderRadius.only(
-                                                          topLeft:
-                                                              Radius.circular(8),
-                                                          topRight:
-                                                              Radius.circular(8)),
-                                                  child: posterUrl.isNotEmpty
-                                                      ? Image.network(
-                                                          posterUrl,
-                                                          width: 150,
-                                                          height: 130,
-                                                          fit: BoxFit.cover,
-                                                          errorBuilder:
-                                                              (context, error,
-                                                                  stackTrace) {
-                                                            return const Icon(
-                                                              Icons
-                                                                  .image_not_supported,
-                                                              size: 100,
-                                                              color: Colors.grey,
-                                                            );
-                                                          },
-                                                        )
-                                                      : const Icon(
-                                                          Icons.image_not_supported,
-                                                          size: 100,
-                                                          color: Colors.grey,
-                                                        ),
-                                                ),
-                                              ),
-                                              Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 8.0),
-                                                child: Text(
-                                                  title,
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 14,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
-                            ),
-                          ),
-                        ],
+        child: ListView(
+          children: [
+            const Divider(
+              color: Color(0xFF068441),
+              thickness: 1,
+              height: 0,
+            ),
+            for (var genre in _appDataManager.genres)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      genre,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
-                ],
-              );
-            } else {
-              return const Center(child: Text('No data available'));
-            }
-          },
+                    const SizedBox(height: 10),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _appDataManager.genreBasedMovies[genre]?.isEmpty ?? true
+                            ? [
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                                  child: Text(
+                                    "No movies available for this genre.",
+                                    style: TextStyle(color: Colors.grey, fontSize: 14),
+                                  ),
+                                ),
+                              ]
+                            : _appDataManager.genreBasedMovies[genre]!
+                                .map<Widget>((movie) {
+                                final title = movie['title'] ?? 'No Title';
+                                final posterUrl = movie['poster_url'] ?? '';
+
+                                return GestureDetector(
+                                  onTap: () => navigateToDescription(movie),
+                                  child: Container(
+                                    margin: const EdgeInsets.only(right: 8),
+                                    width: 150,
+                                    height: 200,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF03100A),
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: const [
+                                        BoxShadow(
+                                          color: Colors.black26,
+                                          blurRadius: 6,
+                                          offset: Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          child: ClipRRect(
+                                            borderRadius: const BorderRadius.only(
+                                                topLeft: Radius.circular(8),
+                                                topRight: Radius.circular(8)),
+                                            child: posterUrl.isNotEmpty
+                                                ? Image.network(
+                                                    posterUrl,
+                                                    width: 150,
+                                                    height: 130,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder:
+                                                        (context, error, stackTrace) {
+                                                      return const Icon(
+                                                        Icons.image_not_supported,
+                                                        size: 100,
+                                                        color: Colors.grey,
+                                                      );
+                                                    },
+                                                  )
+                                                : const Icon(
+                                                    Icons.image_not_supported,
+                                                    size: 100,
+                                                    color: Colors.grey,
+                                                  ),
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8.0),
+                                          child: Text(
+                                            title,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
       ),
     );
