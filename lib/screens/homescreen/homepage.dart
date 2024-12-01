@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:ott_app/moviedesciptionscreen.dart';
 
-// Singleton class to manage app-wide data
 class AppDataManager {
   static final AppDataManager _instance = AppDataManager._internal();
   
