@@ -18,6 +18,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   bool isLoading = false;
+
+  bool _isOldPasswordVisible = false;
+  bool _isNewPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
+
   List<PasswordCriterion> passwordCriteria = [
     PasswordCriterion("At least 6 characters", (p) => p.length >= 6),
     PasswordCriterion("Contains a digit", (p) => RegExp(r'(?=.*?[0-9])').hasMatch(p)),
@@ -130,7 +135,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                Navigator.of(context).pop(); // Navigate back to the profile page
+                Navigator.of(context).pop();
               },
               child: const Text("OK"),
             ),
@@ -214,10 +219,21 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     TextField(
                       controller: oldPasswordController,
                       style: const TextStyle(color: Colors.white),
-                      obscureText: true,
+                      obscureText: !_isOldPasswordVisible,
                       decoration: InputDecoration(
                         labelText: "Old Password",
                         labelStyle: const TextStyle(color: Colors.white),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _isOldPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                            color: Colors.white,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isOldPasswordVisible = !_isOldPasswordVisible;
+                            });
+                          },
+                        ),
                         filled: true,
                         fillColor: Colors.transparent,
                         border: OutlineInputBorder(
@@ -230,13 +246,24 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     TextField(
                       controller: newPasswordController,
                       style: const TextStyle(color: Colors.white),
-                      obscureText: true,
+                      obscureText: !_isNewPasswordVisible,
                       onChanged: (value) {
                         validatePassword(value);
                       },
                       decoration: InputDecoration(
                         labelText: "New Password",
                         labelStyle: const TextStyle(color: Colors.white),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _isNewPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                            color: Colors.white,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isNewPasswordVisible = !_isNewPasswordVisible;
+                            });
+                          },
+                        ),
                         filled: true,
                         fillColor: Colors.transparent,
                         border: OutlineInputBorder(
@@ -249,10 +276,21 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     TextField(
                       controller: confirmPasswordController,
                       style: const TextStyle(color: Colors.white),
-                      obscureText: true,
+                      obscureText: !_isConfirmPasswordVisible,
                       decoration: InputDecoration(
                         labelText: "Confirm Password",
                         labelStyle: const TextStyle(color: Colors.white),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                            color: Colors.white,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                            });
+                          },
+                        ),
                         filled: true,
                         fillColor: Colors.transparent,
                         border: OutlineInputBorder(
@@ -262,7 +300,6 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    // New password criteria list
                     _buildPasswordCriteriaList(),
                     const SizedBox(height: 30),
                     ElevatedButton(
@@ -277,7 +314,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
                         child: Text(
                           "Change Password",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Colors.white),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                       ),
                     ),
@@ -291,7 +328,6 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   }
 }
 
-// New class to represent password criteria
 class PasswordCriterion {
   final String description;
   final bool Function(String) validator;
