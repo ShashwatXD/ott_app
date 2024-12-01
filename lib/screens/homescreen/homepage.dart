@@ -2,7 +2,125 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:ott_app/screens/homescreen/videoplayerscreen.dart';
+import 'package:ott_app/moviedesciptionscreen.dart';
+
+// Singleton class to manage app-wide data
+class AppDataManager {
+  static final AppDataManager _instance = AppDataManager._internal();
+  
+  factory AppDataManager() {
+    return _instance;
+  }
+  
+  AppDataManager._internal();
+
+  List<String> _genres = [];
+  List<Map<String, dynamic>> _recommendations = [];
+  List<Map<String, dynamic>> _movieDescriptions = [];
+  Map<String, List<Map<String, dynamic>>> _genreBasedMovies = {};
+
+  List<String> get genres => _genres;
+  List<Map<String, dynamic>> get recommendations => _recommendations;
+  List<Map<String, dynamic>> get movieDescriptions => _movieDescriptions;
+  Map<String, List<Map<String, dynamic>>> get genreBasedMovies => _genreBasedMovies;
+
+  bool get isDataLoaded => _movieDescriptions.isNotEmpty && _genres.isNotEmpty;
+
+  void updateAppData({
+    required List<Map<String, dynamic>> movieDescriptions,
+    required List<String> genres,
+    required List<Map<String, dynamic>> recommendations,
+    required Map<String, List<Map<String, dynamic>>> genreBasedMovies
+  }) {
+    _movieDescriptions = movieDescriptions;
+    _genres = genres;
+    _recommendations = recommendations;
+    _genreBasedMovies = genreBasedMovies;
+  }
+
+  Map<String, dynamic> getMovieByTitle(String title) {
+    try {
+      return _movieDescriptions.firstWhere(
+        (movie) => movie["title"] == title,
+        orElse: () => {},
+      );
+    } catch (e) {
+      print("Error finding movie: $e");
+      return {};
+    }
+  }
+
+  // Method to fetch data if not already loaded
+  Future<void> fetchInitialData(String jwtToken) async {
+    if (isDataLoaded) return;
+
+    try {
+      // Fetch movie descriptions
+      final descriptionResponse = await http.get(
+        Uri.parse('https://watch-movie-tzae.onrender.com/description'),
+        headers: {'Authorization': 'Bearer $jwtToken'},
+      );
+
+      if (descriptionResponse.statusCode != 200) {
+        print("Failed to fetch movie descriptions: ${descriptionResponse.body}");
+        return;
+      }
+
+      final List<dynamic> movies = json.decode(descriptionResponse.body);
+      final List<Map<String, dynamic>> movieDescriptions = 
+          movies.map((movie) => Map<String, dynamic>.from(movie)).toList();
+
+      // Fetch genres
+      final genreResponse = await http.get(
+        Uri.parse('https://watch-movie-tzae.onrender.com/genre/get'),
+        headers: {'Authorization': 'Bearer $jwtToken'},
+      );
+
+      if (genreResponse.statusCode != 200) {
+        print("Failed to fetch genres: ${genreResponse.body}");
+        return;
+      }
+
+      final genres = List<String>.from(json.decode(genreResponse.body));
+
+      // Fetch recommendations
+      final recommendResponse = await http.post(
+        Uri.parse('https://api-genre-based.onrender.com/recommend'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({"genres": genres}),
+      );
+
+      if (recommendResponse.statusCode != 200) {
+        print("Failed to fetch recommendations: ${recommendResponse.body}");
+        return;
+      }
+
+      final List<dynamic> recommendationsData =
+          json.decode(recommendResponse.body)["recommendations"];
+      final List<Map<String, dynamic>> recommendations = recommendationsData
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+
+      final Map<String, List<Map<String, dynamic>>> genreBasedMovies = {};
+      for (var genre in genres) {
+        genreBasedMovies[genre] = movieDescriptions
+            .where((movie) => movie["genres"].contains(genre))
+            .toList();
+      }
+
+      updateAppData(
+        movieDescriptions: movieDescriptions,
+        genres: genres,
+        recommendations: recommendations,
+        genreBasedMovies: genreBasedMovies
+      );
+
+      print("Data loaded: ${movieDescriptions.length} movies, ${genres.length} genres");
+    } catch (error) {
+      print("Error fetching initial data: $error");
+    }
+  }
+}
 
 class Homepage extends StatefulWidget {
   const Homepage({Key? key}) : super(key: key);
@@ -12,244 +130,281 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> {
-  late Future<List<dynamic>> moviesFuture;
+  final AppDataManager _appDataManager = AppDataManager();
+  final storage = const FlutterSecureStorage();
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    moviesFuture = fetchMovies();
+    _loadInitialData();
   }
-  Future<List<dynamic>> fetchMovies() async {
-    final storage = FlutterSecureStorage();
-    final token = await storage.read(key: 'token');
 
-    if (token == null) {
-      throw Exception("Token is not available");
+  Future<void> _loadInitialData() async {
+    String? jwtToken = await storage.read(key: 'token');
+    if (jwtToken == null) {
+      print("Token not found!");
+      setState(() => _isLoading = false);
+      return;
     }
 
-    final response = await http.get(
-      Uri.parse('https://watch-movie-tzae.onrender.com/videos'),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    );
+    await _appDataManager.fetchInitialData(jwtToken);
+    
+    setState(() {
+      _isLoading = false;
+    });
+  }
 
-    if (response.statusCode == 200) {
-      try {
-        final List<dynamic> movies = json.decode(response.body);
-        return movies;
-      } catch (e) {
-        throw Exception('Failed to parse response: $e');
+  Future<void> _refreshData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      String? jwtToken = await storage.read(key: 'token');
+      if (jwtToken == null) {
+        print("Token not found!");
+        return;
       }
-    } else {
-      throw Exception(
-          'Failed to load movies. Status Code: ${response.statusCode}');
+
+      _appDataManager.updateAppData(
+        movieDescriptions: [],
+        genres: [],
+        recommendations: [],
+        genreBasedMovies: {}
+      );
+
+      await _appDataManager.fetchInitialData(jwtToken);
+    } catch (e) {
+      print("Error refreshing data: $e");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
-  void navigateToVideoPlayer(String videoPath) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => VideoPlayerScreen(videoPath: videoPath),
-      ),
-    );
-  }
-  List<String> flattenGenres(dynamic genres) {
-    if (genres == null) {
-      print("No genres available for this movie.");
-      return [];
-    }
-    if (genres is List) {
-      return genres
-          .expand((e) => e is List ? e : [e])
-          .map((e) => e.toString().trim().toLowerCase())
-          .toList();
-    } else if (genres is String) {
-      return [genres.trim().toLowerCase()];
-    }
-    return [];
-  }
-  List<dynamic> filterMoviesByGenre(List<dynamic> movies, String genre) {
-    genre = genre.trim().toLowerCase(); 
 
-    return movies.where((movie) {
-      var movieGenres = movie['genres'] ?? [];
+  void navigateToDescription(String movieTitle) {
+    final movieDetails = _appDataManager.getMovieByTitle(movieTitle);
 
-      movieGenres = flattenGenres(movieGenres);
-      return movieGenres.contains(genre);
-    }).toList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            IconButton(
-              icon: const Icon(
-                Icons.arrow_back,
-                color: Colors.white,
-              ),
-              onPressed: () {
-                Navigator.pop(context); 
-              },
-            ),
-            const Text(
-              'Home',
-              style: TextStyle(color: Colors.white),
-            ),
-          ],
+    if (movieDetails.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MovieDescriptionScreen(movie: movieDetails),
         ),
-        backgroundColor: const Color(0xFF04130C),
-      ),
+      );
+    } else {
+      print("Movie details not found for title: $movieTitle");
+    }
+  }
+
+@override
+Widget build(BuildContext context) {
+  if (_isLoading) {
+    return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color(0xFF03130B).withOpacity(1), 
-              const Color(0xFF03130B).withOpacity(0.9), 
-              const Color(0xFF03130B).withOpacity(0.9), 
+              const Color(0xFF03130B).withOpacity(1),
+              const Color(0xFF03130B).withOpacity(0.9),
+              const Color(0xFF03130B).withOpacity(0.9),
             ],
             stops: const [0.1, 0.5, 0.9],
           ),
         ),
-        child: FutureBuilder<List<dynamic>>(
-          future: moviesFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
-            } else if (snapshot.hasData) {
-              final movies = snapshot.data!;
-              List<String> genres = [
-                "Romance",
-                "Action",
-                "Comedy",
-                "Drama",
-                "Horror",
-                "Thriller",
-                "Sci-Fi",
-                "Fantasy",
-                "Adventure",
-                "Mystery"
-              ];
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(
+                color: Colors.white,
+                backgroundColor: const Color(0xFF03130B),
+              ),
+              SizedBox(height: 20),
+              Text(
+                "This might take a minute...",
+                style: TextStyle(color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-              return ListView(
-                children: [
-                  const Divider(
-                    color: Color(0xFF068441),
-                    thickness: 1,
-                    height: 0,
-                  ),
-                  for (var genre in genres)
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            genre,
-                            style: const TextStyle(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Movies", style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFF03130B),
+      ),
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        color: Colors.white,
+        backgroundColor: const Color(0xFF03130B),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF03130B).withOpacity(1),
+                const Color(0xFF03130B).withOpacity(0.9),
+                const Color(0xFF03130B).withOpacity(0.9),
+              ],
+              stops: const [0.1, 0.5, 0.9],
+            ),
+          ),
+          child: CustomScrollView(
+            slivers: [
+              if (_appDataManager.recommendations.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text(
+                          "Recommended for You",
+                          style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white, 
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: filterMoviesByGenre(movies, genre).isEmpty
-                                  ? [
-                                      const Padding(
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 8.0),
-                                        child: Text(
-                                          "No movies available for this genre.",
-                                          style: TextStyle(
-                                              color: Colors.grey, fontSize: 14),
-                                        ),
-                                      ),
-                                    ]
-                                  : filterMoviesByGenre(movies, genre)
-                                      .map<Widget>((movie) {
-                                      final title = movie['title'];
-                                      final posterUrl = movie['poster_url'];
-                                      final trailerUrl = movie['trailer_url'];
-
-                                      return GestureDetector(
-                                        onTap: () {
-                                          navigateToVideoPlayer(trailerUrl);
-                                        },
-                                        child: Container(
-                                          margin: const EdgeInsets.only(right: 8),
-                                          width: 150, 
-                                          height: 200, 
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF03100A),
-                                            borderRadius: BorderRadius.circular(8),
-                                            boxShadow: const [
-                                              BoxShadow(
-                                                color: Colors.black26,
-                                                blurRadius: 6,
-                                                offset: Offset(0, 4),
-                                              ),
-                                            ],
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Expanded(
-                                                child: ClipRRect(
-                                                  borderRadius: const BorderRadius.only(
-                                                      topLeft: Radius.circular(8),
-                                                      topRight: Radius.circular(8)),
-                                                  child: Image.network(
-                                                    posterUrl,
-                                                    width: 150,
-                                                    height: 130, 
-                                                    fit: BoxFit.cover,
-                                                  ),
-                                                ),
-                                              ),
-                                              Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 8.0),
-                                                child: Text(
-                                                  title,
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 14,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
-                            ),
-                          ),
-                        ],
+                              color: Colors.white),
+                        ),
                       ),
-                    ),
-                ],
-              );
-            } else {
-              return const Center(child: Text('No movies available.'));
-            }
-          },
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text(
+                          "FOR YOU",
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w300,
+                              color: Colors.white70),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 200,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _appDataManager.recommendations.length,
+                          itemBuilder: (context, index) {
+                            final movie = _appDataManager.recommendations[index];
+                            return GestureDetector(
+                              onTap: () =>
+                                  navigateToDescription(movie["title"] ?? ''),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Stack(
+                                  alignment: Alignment.bottomCenter,
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8.0),
+                                      child: Image.network(
+                                        movie["poster_url"] ?? '',
+                                        height: 150,
+                                        width: 100,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 100,
+                                      color: Colors.black.withOpacity(0.6),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 4.0, horizontal: 6.0),
+                                      child: Text(
+                                        movie["title"] ?? '',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.white,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        maxLines: 1,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              for (var entry in _appDataManager.genreBasedMovies.entries)
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          "${entry.key} Movies",
+                          style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 200,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: entry.value.length,
+                          itemBuilder: (context, index) {
+                            final movie = entry.value[index];
+                            return GestureDetector(
+                              onTap: () =>
+                                  navigateToDescription(movie["title"] ?? ''),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Stack(
+                                  alignment: Alignment.bottomCenter,
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8.0),
+                                      child: Image.network(
+                                        movie["poster_url"] ?? '',
+                                        height: 150,
+                                        width: 100,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 100,
+                                      color: Colors.black.withOpacity(0.6),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 4.0, horizontal: 6.0),
+                                      child: Text(
+                                        movie["title"] ?? '',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.white,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        maxLines: 1,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
+

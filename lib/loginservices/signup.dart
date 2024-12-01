@@ -106,7 +106,7 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Signup successful!')),
           );
-          Navigator.push(
+          Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const LoginPage()),
           );
@@ -284,7 +284,7 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
                   const SizedBox(height: 20),
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(builder: (context) => const LoginPage()),
                       );

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:ott_app/screens/homescreen/videoplayerscreen.dart';
+import 'package:ott_app/moviedesciptionscreen.dart';
 
 class CategoryScreen extends StatefulWidget {
   const CategoryScreen({Key? key}) : super(key: key);
@@ -19,6 +19,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
     super.initState();
     moviesFuture = fetchMovies();
   }
+
   Future<List<dynamic>> fetchMovies() async {
     final storage = FlutterSecureStorage();
     final token = await storage.read(key: 'token');
@@ -28,7 +29,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
     }
 
     final response = await http.get(
-      Uri.parse('https://watch-movie-tzae.onrender.com/videos'),
+      Uri.parse('https://watch-movie-tzae.onrender.com/description'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -36,7 +37,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
     if (response.statusCode == 200) {
       try {
-        final List<dynamic> movies = json.decode(response.body);
+        final List<dynamic> movies = json.decode(response.body) ?? [];
         return movies;
       } catch (e) {
         throw Exception('Failed to parse response: $e');
@@ -46,17 +47,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
           'Failed to load movies. Status Code: ${response.statusCode}');
     }
   }
-  void navigateToVideoPlayer(String videoPath) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => VideoPlayerScreen(videoPath: videoPath),
-      ),
-    );
-  }
+
   List<String> flattenGenres(dynamic genres) {
     if (genres == null) {
-      print("No genres available for this movie.");
       return [];
     }
     if (genres is List) {
@@ -69,12 +62,12 @@ class _CategoryScreenState extends State<CategoryScreen> {
     }
     return [];
   }
+
   List<dynamic> filterMoviesByGenre(List<dynamic> movies, String genre) {
-    genre = genre.trim().toLowerCase(); 
+    genre = genre.trim().toLowerCase();
 
     return movies.where((movie) {
       var movieGenres = movie['genres'] ?? [];
-
       movieGenres = flattenGenres(movieGenres);
       return movieGenres.contains(genre);
     }).toList();
@@ -86,15 +79,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            IconButton(
-              icon: const Icon(
-                Icons.arrow_back,
-                color: Colors.white,
-              ),
-              onPressed: () {
-                Navigator.pop(context); 
-              },
-            ),
+            
             const Text(
               'Categories',
               style: TextStyle(color: Colors.white),
@@ -109,9 +94,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color(0xFF03130B).withOpacity(1), 
-              const Color(0xFF03130B).withOpacity(0.9), 
-              const Color(0xFF03130B).withOpacity(0.9), 
+              const Color(0xFF03130B).withOpacity(1),
+              const Color(0xFF03130B).withOpacity(0.9),
+              const Color(0xFF03130B).withOpacity(0.9),
             ],
             stops: const [0.1, 0.5, 0.9],
           ),
@@ -124,7 +109,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
             } else if (snapshot.hasError) {
               return Center(child: Text('Error: ${snapshot.error}'));
             } else if (snapshot.hasData) {
-              final movies = snapshot.data!;
+              final movies = snapshot.data ?? [];
               List<String> genres = [
                 "Romance",
                 "Action",
@@ -156,7 +141,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white, 
+                              color: Colors.white,
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -177,18 +162,26 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                     ]
                                   : filterMoviesByGenre(movies, genre)
                                       .map<Widget>((movie) {
-                                      final title = movie['title'];
-                                      final posterUrl = movie['poster_url'];
-                                      final trailerUrl = movie['trailer_url'];
+                                      final title = movie['title'] ?? 'No Title';
+                                      final posterUrl = movie['poster_url'] ?? '';
+                                      final movieData = movie;
 
                                       return GestureDetector(
                                         onTap: () {
-                                          navigateToVideoPlayer(trailerUrl);
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  MovieDescriptionScreen(
+                                                movie: movieData,
+                                              ),
+                                            ),
+                                          );
                                         },
                                         child: Container(
                                           margin: const EdgeInsets.only(right: 8),
-                                          width: 150, 
-                                          height: 200, 
+                                          width: 150,
+                                          height: 200,
                                           decoration: BoxDecoration(
                                             color: const Color(0xFF03100A),
                                             borderRadius: BorderRadius.circular(8),
@@ -206,15 +199,34 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                             children: [
                                               Expanded(
                                                 child: ClipRRect(
-                                                  borderRadius: const BorderRadius.only(
-                                                      topLeft: Radius.circular(8),
-                                                      topRight: Radius.circular(8)),
-                                                  child: Image.network(
-                                                    posterUrl,
-                                                    width: 150,
-                                                    height: 130, 
-                                                    fit: BoxFit.cover,
-                                                  ),
+                                                  borderRadius:
+                                                      const BorderRadius.only(
+                                                          topLeft:
+                                                              Radius.circular(8),
+                                                          topRight:
+                                                              Radius.circular(8)),
+                                                  child: posterUrl.isNotEmpty
+                                                      ? Image.network(
+                                                          posterUrl,
+                                                          width: 150,
+                                                          height: 130,
+                                                          fit: BoxFit.cover,
+                                                          errorBuilder:
+                                                              (context, error,
+                                                                  stackTrace) {
+                                                            return const Icon(
+                                                              Icons
+                                                                  .image_not_supported,
+                                                              size: 100,
+                                                              color: Colors.grey,
+                                                            );
+                                                          },
+                                                        )
+                                                      : const Icon(
+                                                          Icons.image_not_supported,
+                                                          size: 100,
+                                                          color: Colors.grey,
+                                                        ),
                                                 ),
                                               ),
                                               Padding(
@@ -224,7 +236,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                                 child: Text(
                                                   title,
                                                   maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                   style: const TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 14,
@@ -245,7 +258,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 ],
               );
             } else {
-              return const Center(child: Text('No movies available.'));
+              return const Center(child: Text('No data available'));
             }
           },
         ),

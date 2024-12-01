@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:ott_app/screens/homescreen/videoplayerscreen.dart';
+import 'package:ott_app/moviedesciptionscreen.dart';
 
 class SearchScreen extends StatefulWidget {
   @override
@@ -29,14 +29,14 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     final response = await http.get(
-      Uri.parse('https://watch-movie-tzae.onrender.com/videos'),
+      Uri.parse('https://watch-movie-tzae.onrender.com/description'),
       headers: {'Authorization': 'Bearer $token'},
     );
 
     if (response.statusCode == 200) {
       final List<dynamic> movies = json.decode(response.body);
       setState(() {
-        allMovies = movies;
+        allMovies = movies; 
         filteredMovies = []; 
       });
     } else {
@@ -53,7 +53,7 @@ class _SearchScreenState extends State<SearchScreen> {
       setState(() {
         filteredMovies = allMovies
             .where((movie) {
-              String title = movie['title'] ?? '';
+              String title = movie['title'] ?? ''; 
               return _isSequenceMatch(title.toLowerCase(), query.toLowerCase());
             })
             .toList();
@@ -61,7 +61,6 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-  
   bool _isSequenceMatch(String title, String query) {
     int queryIndex = 0;
     for (int i = 0; i < title.length && queryIndex < query.length; i++) {
@@ -71,21 +70,23 @@ class _SearchScreenState extends State<SearchScreen> {
     }
     return queryIndex == query.length;
   }
-  void _navigateToVideoPlayer(String trailerUrl) {
+
+  void _navigateToMovieDescriptionScreen(dynamic movieData) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => VideoPlayerScreen(videoPath: trailerUrl),
+        builder: (context) => MovieDescriptionScreen(
+          movie: movieData, 
+        ),
       ),
     );
   }
 
-
-  String _truncateOverview(String overview) {
-    if (overview.length > 100) { 
+  String _truncateOverview(String? overview) {
+    if (overview != null && overview.length > 100) {
       return overview.substring(0, 100) + '...';
     }
-    return overview;
+    return overview ?? ''; 
   }
 
   @override
@@ -93,11 +94,11 @@ class _SearchScreenState extends State<SearchScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Search Movies'),
-        backgroundColor: Color(0xFF111714), 
+        backgroundColor: Color(0xFF111714),
         elevation: 0,
       ),
       body: Container(
-        color: Color(0xFF111714), 
+        color: Color(0xFF111714),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -110,11 +111,11 @@ class _SearchScreenState extends State<SearchScreen> {
                 child: TextField(
                   controller: searchController,
                   onChanged: _searchMovies,
-                  style: TextStyle(color: Colors.white), 
+                  style: TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: '            Search for movies...',
-                    hintStyle: TextStyle(color: Color(0xFF5E5D5D).withOpacity(0.5)), 
-                    prefixIcon: Icon(Icons.search, color: Colors.white), 
+                    hintStyle: TextStyle(color: Color(0xFF5E5D5D).withOpacity(0.5)),
+                    prefixIcon: Icon(Icons.search, color: Colors.white),
                     suffixIcon: searchController.text.isNotEmpty
                         ? IconButton(
                             icon: Icon(Icons.clear, color: Colors.white),
@@ -130,52 +131,51 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ),
               SizedBox(height: 10),
-              
+
               Expanded(
                 child: filteredMovies.isEmpty && searchController.text.isNotEmpty
                     ? Center(child: Text('No movies found', style: TextStyle(color: Colors.white)))
                     : GridView.builder(
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          crossAxisSpacing: 10, 
-                          mainAxisSpacing: 10, 
-                          childAspectRatio: 0.6, 
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 0.6,
                         ),
                         itemCount: filteredMovies.length,
                         itemBuilder: (context, index) {
                           var movie = filteredMovies[index];
                           return GestureDetector(
                             onTap: () {
-                              _navigateToVideoPlayer(movie['trailer_url']);
+                              _navigateToMovieDescriptionScreen(movie);
                             },
                             child: Card(
-                              color: Color(0xFF111714), 
+                              color: Color(0xFF111714),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(10),
                                     child: Image.network(
-                                      movie['poster_url'],
+                                      movie['poster_url'] ?? '', 
                                       fit: BoxFit.cover,
                                       height: 150,
                                       width: double.infinity,
                                     ),
                                   ),
                                   SizedBox(height: 8),
-                                 
+
                                   Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
                                     child: Text(
-                                      movie['title'],
+                                      movie['title'] ?? 'No Title', 
                                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                       maxLines: 1,
-                                      overflow: TextOverflow.ellipsis, 
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   SizedBox(height: 5),
-                                
+
                                   Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
                                     child: Text(

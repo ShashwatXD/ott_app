@@ -24,7 +24,7 @@ class MovieNotifier extends StateNotifier<AsyncValue<List<Movie>>> {
       }
 
       final response = await http.get(
-        Uri.parse('https://watch-movie-tzae.onrender.com/videos'),
+        Uri.parse('https://watch-movie-tzae.onrender.com/description'),
         headers: {
           'Authorization': 'Bearer $token',
         },
