@@ -41,6 +41,7 @@ dependencies:
   flutter_riverpod: ^2.6.1
   http: ^1.2.2
   flutter_secure_storage: ^9.0.0
+  better_player: ^0.0.84
    
 
 dev_dependencies:
